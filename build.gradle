@@ -1,0 +1,108 @@
+// Apply plugins
+apply plugin: 'java' // Support for Java
+apply plugin: 'maven' // Maven integration
+apply plugin: 'eclipse' // Helper plugin for IDE
+apply plugin: 'idea' // Helper plugin for IDE
+
+// Extended project information. Edit these values!
+ext.projectName = 'Testing'
+ext.packaging = 'jar'
+ext.author = 'Johni0702'
+ext.authorUrl = 'https://github.com/johni0702'
+ext.inceptionYear = '2015'
+
+// Set plugin version. Edit this value! 
+version = '0.0.1'
+
+// Maven group
+group = 'de.johni0702.sponge'
+// Maven artifactId
+archivesBaseName = 'testing'
+
+// Set compatibility
+sourceCompatibility = 1.7
+targetCompatibility = 1.7
+
+// Set Maven repositories to check for dependencies
+repositories {
+	maven {
+		name 'Sponge maven repo'
+		url 'http://repo.spongepowered.org/maven'
+	}
+	maven {
+		name = 'sonatype-nexus'
+		url = 'https://oss.sonatype.org/content/groups/public/'
+	}
+	mavenCentral()
+}
+
+// Add a new dependency configuration
+configurations {
+	provided
+	compile.extendsFrom provided
+}
+
+// Add your own dependencies. 
+// You can also edit which version of the SpongeAPI is used by the plugin
+dependencies {
+	provided 'org.spongepowered:spongeapi:1.1-SNAPSHOT' // Assume availability of the Sponge API
+	// Use 'compile' instead of 'provided' for your own dependencies. Example:
+	// compile 'org.apache.commons:commons-lang3:3.3.2'
+}
+
+// Make the jar task contain all dependencies except for the provided configuration in the final output
+jar {
+	dependsOn configurations.runtime
+	from {
+		(configurations.runtime - configurations.provided).collect {
+			it.isDirectory() ? it : zipTree(it)
+		}
+	}
+}
+
+// Task to generate source jar
+task sourcesJar(type: Jar, dependsOn: classes) {
+	classifier = "sources"
+	from sourceSets.main.allSource
+}
+
+// Task to generate javadoc jar
+task javadocJar(type: Jar, dependsOn: javadoc) {
+	classifier = "javadoc"
+	from javadoc.destinationDir
+}
+
+// Include LICENSE.txt in all jars
+processResources {
+	from new File(rootProject.getProjectDir(), "LICENSE.txt")
+}
+
+// Define compiled jar, sources jar and javadoc jar as Maven artifacts
+artifacts {
+	archives jar
+	archives sourcesJar
+	archives javadocJar
+}
+
+// Add custom jar tasks to build task
+build.dependsOn(sourcesJar)
+build.dependsOn(javadocJar)
+
+// Equivalent to mvn install for your latest artifacts
+uploadArchives {
+	repositories {
+		mavenDeployer {
+			// mavenUrl has to be set in your {userfolder}/.gradle/gradle.properties file
+			// Example file content: 
+			// mavenUrl=file:///C://mvn-repo/
+			if (project.hasProperty("mavenUrl")) {
+				repository(url: mavenUrl)
+			}
+			pom {
+				groupId = project.group
+				artifactId = project.archivesBaseName
+				version = project.version
+			}
+		}
+	}
+}
